@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Puzzle Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f9;
+        }
+
+        #game-container {
+            text-align: center;
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            width: 300px;
+            display: none;
+        }
+
+        #difficulty-buttons {
+            display: none;
+        }
+
+        #scrambled-word {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        #input-area {
+            margin-bottom: 20px;
+        }
+
+        #input-area input {
+            width: 80%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
+        #start-btn, #submit-btn, #restart-btn, .difficulty-btn {
+            padding: 8px 20px;
+            margin: 5px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        #start-btn:hover, #submit-btn:hover, #restart-btn:hover, .difficulty-btn:hover {
+            background-color: #0056b3;
+        }
+
+        #result {
+            font-size: 18px;
+            margin-top: 10px;
+        }
+
+        #score, #timer, #high-score {
+            font-size: 18px;
+            margin: 10px 0;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #title {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="start-container">
+        <div id="title">Word Puzzle</div>
+        <button id="start-btn">Start</button>
+    </div>
+
+    <div id="difficulty-buttons">
+        <div id="title">Word Puzzle</div>
+        <button class="difficulty-btn" data-time="15" data-difficulty="easy">Easy</button>
+        <button class="difficulty-btn" data-time="10" data-difficulty="medium">Medium</button>
+        <button class="difficulty-btn" data-time="5" data-difficulty="hard">Hard</button>
+    </div>
+
+    <div id="game-container">
+        <div id="scrambled-word">?????</div>
+        <div id="input-area">
+            <input type="text" id="guess" placeholder="Your guess">
+        </div>
+        <button id="submit-btn">Submit</button>
+        <button id="restart-btn">Restart</button>
+        <div id="timer">Time: 10</div>
+        <div id="score">Score: 0</div>
+        <div id="high-score">High Score: 0</div>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const words = {
+            easy: ["game", "time", "code", "word", "pencil"],
+            medium: ["puzzle", "coding", "browser", "frontend", "backend"],
+            hard: ["javascript", "development", "framework", "programming"]
+        };
+
+        let currentWord = "";
+        let scrambledWord = "";
+        let score = 0;
+        let highScore = localStorage.getItem('highScore') || 0;
+        let timeLeft = 10;
+        let timerInterval;
+
+        document.getElementById('high-score').textContent = `High Score: ${highScore}`;
+
+        function scrambleWord(word) {
+            return word.split('').sort(() => Math.random() - 0.5).join('');
+        }
+
+        function showElement(id) {
+            document.getElementById(id).style.display = 'block';
+        }
+
+        function hideElement(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        function fadeInScrambledWord() {
+            const scrambledElement = document.getElementById('scrambled-word');
+            scrambledElement.style.opacity = 0;
+            setTimeout(() => scrambledElement.style.opacity = 1, 10);
+        }
+
+        function startGame(difficulty) {
+            const wordList = words[difficulty];
+            currentWord = wordList[Math.floor(Math.random() * wordList.length)];
+            scrambledWord = scrambleWord(currentWord);
+            document.getElementById('scrambled-word').textContent = scrambledWord;
+            document.getElementById('guess').value = "";
+            document.getElementById('result').textContent = "";
+            fadeInScrambledWord();
+            document.getElementById('timer').textContent = `Time: ${timeLeft}`;
+            clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function updateTimer() {
+            timeLeft--;
+            document.getElementById('timer').textContent = `Time: ${timeLeft}`;
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                document.getElementById('result').textContent = "Time's up! ❌";
+                document.getElementById('result').style.color = "red";
+                setTimeout(() => {
+                    startGame(getCurrentDifficulty());
+                }, 2000);
+            }
+        }
+
+        function getCurrentDifficulty() {
+            return document.querySelector('.difficulty-btn[data-active="true"]').getAttribute('data-difficulty');
+        }
+
+        function restartGame() {
+            clearInterval(timerInterval);
+            score = 0;
+            document.getElementById('score').textContent = `Score: ${score}`;
+            document.getElementById('high-score').textContent = `High Score: ${highScore}`;
+            startGame(getCurrentDifficulty());
+        }
+
+        document.getElementById('start-btn').addEventListener('click', () => {
+            hideElement('start-container');
+            showElement('difficulty-buttons');
+        });
+
+        document.querySelectorAll('.difficulty-btn').forEach(button => {
+            button.addEventListener('click', (event) => {
+                document.querySelectorAll('.difficulty-btn').forEach(btn => btn.removeAttribute('data-active'));
+                button.setAttribute('data-active', true);
+                timeLeft = parseInt(button.getAttribute('data-time'));
+                hideElement('difficulty-buttons');
+                showElement('game-container');
+                startGame(button.getAttribute('data-difficulty'));
+            });
+        });
+
+        document.getElementById('submit-btn').addEventListener('click', () => {
+            const guess = document.getElementById('guess').value.trim().toLowerCase();
+            const result = document.getElementById('result');
+            if (guess === currentWord) {
+                score++;
+                highScore = Math.max(highScore, score);
+                localStorage.setItem('highScore', highScore);
+                document.getElementById('score').textContent = `Score: ${score}`;
+                document.getElementById('high-score').textContent = `High Score: ${highScore}`;
+                result.textContent = "Correct! 🎉";
+                result.style.color = "green";
+                clearInterval(timerInterval);
+                setTimeout(() => {
+                    startGame(getCurrentDifficulty());
+                }, 2000);
+            } else {
+                result.textContent = "Try again! ❌";
+                result.style.color = "red";
+            }
+        });
+
+        document.getElementById('restart-btn').addEventListener('click', restartGame);
+    </script>
+</body>
+</html>
